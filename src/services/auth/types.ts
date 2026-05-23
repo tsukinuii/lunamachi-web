@@ -22,3 +22,8 @@ export type RegisterPayload = {
   lastname: string;
   avatarUrl: string;
 };
+
+export type Me = { id: string; email?: string; name?: string };
+
+export type SocialProvider = "google" | "github";
+
