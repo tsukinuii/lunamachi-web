@@ -1,5 +1,4 @@
-import NextAuth from "next-auth";
-import { SocialProvider } from "@/features/auth/types";
+import { SocialProvider } from "@/features/auth/auth.types";
 
 declare module "next-auth" {
   interface Session {

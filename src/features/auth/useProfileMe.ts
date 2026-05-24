@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import {
   meService,
   logoutBackend,
-} from "../services/auth.client";
-import { exchangeSocialAction } from "../actions/socialExchange.client";
-import { Me, SocialProvider } from "../types";
+} from "./auth.service";
+import { exchangeSocialAction } from "./socialExchange.client";
+import { Me, SocialProvider } from "./auth.types";
 
 type SessionLike = {
   provider?: SocialProvider;
@@ -54,7 +54,7 @@ async function loadMe(session: SessionLike) {
 
 export function useProfileMe() {
   const { data, status } = useSession();
-  const session = (data as any as SessionLike) ?? {};
+  const session = useMemo(() => (data as SessionLike | null) ?? {}, [data]);
 
   const [me, setMe] = useState<Me | null>(null);
   const [loading, setLoading] = useState(false);
@@ -75,8 +75,9 @@ export function useProfileMe() {
       try {
         const m = await loadMe(session);
         if (alive) setMe(m);
-      } catch (e: any) {
-        if (alive) setError(e?.message || "error");
+      } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : "error";
+        if (alive) setError(message);
       } finally {
         if (alive) setLoading(false);
       }
@@ -85,7 +86,7 @@ export function useProfileMe() {
     return () => {
       alive = false;
     };
-  }, [status]);
+  }, [session, status]);
 
   async function logout() {
     await logoutBackend();

@@ -1,8 +1,27 @@
-import NextAuth, { type NextAuthOptions } from "next-auth";
+import { type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import GitHub from "next-auth/providers/github";
-import { loginWithBackend } from "@/features/auth/services/auth.client";
+import { loginWithBackend } from "@/features/auth/auth.service";
+
+type BackendLoginResult = {
+  data?: {
+    id?: string;
+    email?: string;
+    user?: {
+      id?: string;
+      email?: string;
+    };
+  };
+  user?: {
+    id?: string;
+    email?: string;
+  };
+};
+
+function isSocialProvider(provider: string): provider is "google" | "github" {
+  return provider === "google" || provider === "github";
+}
 
 export const authOptions: NextAuthOptions = {
   debug: process.env.NODE_ENV === "development",
@@ -39,21 +58,22 @@ export const authOptions: NextAuthOptions = {
 
         if (!result) return null;
 
-        const user = result?.data?.user ?? result?.user ?? result?.data ?? {};
+        const typedResult = result as BackendLoginResult;
+        const user = typedResult?.data?.user ?? typedResult?.user ?? typedResult?.data ?? {};
         const id = user?.id ?? user?.email ?? credentials.email;
 
         return {
           id: String(id),
           email: user.email ?? (credentials.email as string),
-        } as any;
+        };
       },
     }),
   ],
 
   callbacks: {
     async jwt({ token, account }) {
-      if (account?.provider) {
-        token.provider = account.provider as any;
+      if (account?.provider && isSocialProvider(account.provider)) {
+        token.provider = account.provider;
         if (account.access_token) token.providerAccessToken = account.access_token;
       }
 

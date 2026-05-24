@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getAccommodations } from "../services/accommodations.client";
-import { Accommodation } from "../types";
+import { getAccommodationsClient } from "./accommodation.client";
+import { Accommodation } from "./accommodation.types";
 
 export function useAccommodations() {
   const [items, setItems] = useState<Accommodation[]>([]);
@@ -17,15 +17,16 @@ export function useAccommodations() {
       setError("");
 
       try {
-        const data = await getAccommodations({
+        const data = await getAccommodationsClient({
           page: 1,
           limit: 20,
           locale: "th",
         });
 
         if (alive) setItems(data);
-      } catch (e: any) {
-        if (alive) setError(e?.message || "Load accommodations failed");
+      } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : "Load accommodations failed";
+        if (alive) setError(message);
       } finally {
         if (alive) setLoading(false);
       }

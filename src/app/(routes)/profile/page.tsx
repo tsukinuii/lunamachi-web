@@ -1,8 +1,8 @@
 "use client";
 
 import { signOut } from "next-auth/react";
-import { logoutBackend } from "@/features/auth/services/auth.client";
-import { useProfileMe } from "@/features/auth/hooks/useProfileMe";
+import { logoutBackend } from "@/features/auth/auth.service";
+import { useProfileMe } from "@/features/auth/useProfileMe";
 
 export default function ProfilePage() {
   const { status, me, loading, error, session } = useProfileMe();

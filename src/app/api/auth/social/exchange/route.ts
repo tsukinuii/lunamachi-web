@@ -44,7 +44,7 @@ export async function POST(req: Request) {
     textPreview: rawText.slice(0, 300),
   });
 
-  let data: any = {};
+  let data: unknown = {};
   try {
     data = rawText ? JSON.parse(rawText) : {};
   } catch {

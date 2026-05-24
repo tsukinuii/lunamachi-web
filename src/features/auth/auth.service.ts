@@ -1,5 +1,5 @@
 import { getCsrfToken } from "@/lib/http/csrf";
-import { LoginPayload, RegisterPayload, Me } from "../types";
+import { LoginPayload, RegisterPayload, Me } from "./auth.types";
 
 const NEXT_APP_BASE_URL = typeof window === "undefined" ? process.env.NEXTAUTH_URL : "";
 

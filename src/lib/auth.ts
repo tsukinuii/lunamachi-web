@@ -1,6 +1,6 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import { loginWithBackend } from "@/features/auth/services/auth.client";
+import { loginWithBackend } from "@/features/auth/auth.service";
 
 export const {
   auth,

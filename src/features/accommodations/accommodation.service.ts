@@ -1,9 +1,9 @@
-import { apiFetch } from "@/lib/http/client";
+import { backendApiUrl } from "@/server/bff/config";
 import {
   Accommodation,
   AccommodationListParams,
   AccommodationListResponse,
-} from "../types";
+} from "./accommodation.types";
 
 function pickItems(data: AccommodationListResponse): Accommodation[] {
   const nested = data?.data;
@@ -23,13 +23,24 @@ function pickItems(data: AccommodationListResponse): Accommodation[] {
   return [];
 }
 
-export async function getAccommodations(params: AccommodationListParams = {}) {
+export async function getAccommodationsServer(
+  params: AccommodationListParams = {},
+) {
   const search = new URLSearchParams({
     page: String(params.page ?? 1),
     limit: String(params.limit ?? 20),
     locale: params.locale ?? "th",
   });
 
-  const data = await apiFetch<AccommodationListResponse>(`/api/accommodations?${search}`);
-  return pickItems(data);
+  const res = await fetch(backendApiUrl(`/api/accommodations?${search}`), {
+    next: { revalidate: 60 },
+  });
+
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    throw new Error(data?.error?.message || data?.message || "Load accommodations failed");
+  }
+
+  return pickItems(data as AccommodationListResponse);
 }
