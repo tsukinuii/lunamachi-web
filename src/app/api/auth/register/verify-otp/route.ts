@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+import { backendApiUrl } from "@/server/bff/config";
+import { backendJsonHeaders } from "@/server/bff/headers";
 
 export async function POST(req: Request) {
   const body = await req.json();
 
-  const res = await fetch(`${API_BASE_URL}/auth/register/verify-otp`, {
+  const res = await fetch(backendApiUrl("/api/auth/register/verify-otp"), {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: backendJsonHeaders(req),
     body: JSON.stringify(body),
   });
 

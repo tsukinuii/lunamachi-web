@@ -2,10 +2,10 @@ import NextAuth, { type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import GitHub from "next-auth/providers/github";
-import { loginWithBackend, getMe } from "@/services/auth/auth.service";
+import { loginWithBackend } from "@/features/auth/services/auth.client";
 
 export const authOptions: NextAuthOptions = {
-  debug: true,
+  debug: process.env.NODE_ENV === "development",
   session: { strategy: "jwt" },
 
   providers: [
@@ -14,7 +14,6 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       authorization: {
         params: {
-          // ✅ ทำให้ access_token ใช้กับ userinfo ได้ชัวร์
           scope: "openid email profile",
           prompt: "consent",
         },
@@ -38,57 +37,33 @@ export const authOptions: NextAuthOptions = {
           password: credentials.password as string,
         });
 
-        const accessToken = result?.data?.accessToken ?? result?.accessToken;
-        if (!accessToken) return null;
+        if (!result) return null;
 
-        const me = await getMe(accessToken);
-        const u = (me as any)?.data ?? me;
-        if (!u?.id) return null;
+        const user = result?.data?.user ?? result?.user ?? result?.data ?? {};
+        const id = user?.id ?? user?.email ?? credentials.email;
 
         return {
-          id: String(u.id),
-          email: u.email ?? (credentials.email as string),
-          accessToken,
+          id: String(id),
+          email: user.email ?? (credentials.email as string),
         } as any;
       },
     }),
   ],
 
   callbacks: {
-    async jwt({ token, user, account }) {
-      // credentials
-      if (user && (user as any).accessToken) {
-        (token as any).accessToken = (user as any).accessToken;
-      }
-
-      // social
+    async jwt({ token, account }) {
       if (account?.provider) {
-        (token as any).provider = account.provider;
-
-        // ✅ เรา "บังคับใช้ access_token เท่านั้น"
-        if (account.access_token) (token as any).providerAccessToken = account.access_token;
-
-        // log
-        console.log("[nextauth][jwt]", {
-          provider: account.provider,
-          hasAccessToken: !!account.access_token,
-          accessTokenLen: account.access_token?.length ?? 0,
-        });
+        token.provider = account.provider as any;
+        if (account.access_token) token.providerAccessToken = account.access_token;
       }
 
       return token;
     },
 
     async session({ session, token }) {
-      (session as any).provider = (token as any).provider;
-      (session as any).providerAccessToken = (token as any).providerAccessToken;
-      (session as any).accessToken = (token as any).accessToken;
-
-      console.log("[nextauth][session]", {
-        provider: (session as any).provider,
-        hasProviderAccessToken: !!(session as any).providerAccessToken,
-        providerAccessTokenLen: ((session as any).providerAccessToken as string | undefined)?.length ?? 0,
-      });
+      session.provider = token.provider;
+      session.providerAccessToken = token.providerAccessToken;
+      session.providerIdToken = token.providerIdToken;
 
       return session;
     },

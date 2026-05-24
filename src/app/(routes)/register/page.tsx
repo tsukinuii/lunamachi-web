@@ -4,7 +4,7 @@ import { useState } from "react";
 import {
   requestRegisterOtp,
   verifyRegisterOtp,
-} from "@/services/auth/auth.service";
+} from "@/features/auth/services/auth.client";
 import { signIn } from "next-auth/react";
 
 export default function RegisterPage() {

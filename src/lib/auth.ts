@@ -1,10 +1,10 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import { loginWithBackend } from "@/services/auth/auth.service";
+import { loginWithBackend } from "@/features/auth/services/auth.client";
 
 export const {
-  auth,      // ✅ ต้องมีตัวนี้
-  handlers,  // ✅ สำหรับ route
+  auth,
+  handlers,
 } = NextAuth({
   providers: [
     Credentials({
@@ -20,23 +20,15 @@ export const {
 
         if (!result) return null;
 
+        const user = result?.data?.user ?? result?.user ?? result?.data ?? {};
+        const id = user?.id ?? user?.email ?? credentials.email;
+
         return {
-          id: result.user.id,
-          email: result.user.email,
-          accessToken: result.accessToken,
+          id: String(id),
+          email: user.email ?? (credentials.email as string),
         };
       },
     }),
   ],
   session: { strategy: "jwt" },
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user && (user as any).accessToken) token.accessToken = (user as any).accessToken;
-      return token;
-    },
-    async session({ session, token }) {
-      (session as any).accessToken = token.accessToken as string | undefined;
-      return session;
-    },
-  },
 });

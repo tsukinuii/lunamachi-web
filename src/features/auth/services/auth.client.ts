@@ -1,11 +1,21 @@
-import { LoginPayload, RegisterPayload, Me } from "./types";
+import { getCsrfToken } from "@/lib/http/csrf";
+import { LoginPayload, RegisterPayload, Me } from "../types";
 
-const BASE_URL = typeof window === "undefined" ? process.env.NEXTAUTH_URL : "";
+const NEXT_APP_BASE_URL = typeof window === "undefined" ? process.env.NEXTAUTH_URL : "";
+
+function jsonHeaders(extra?: HeadersInit): HeadersInit {
+  return {
+    "Content-Type": "application/json",
+    "X-CSRF": getCsrfToken(),
+    ...(extra ?? {}),
+  };
+}
 
 export async function requestRegisterOtp(email: string) {
   const res = await fetch("/api/auth/register/request-otp", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: jsonHeaders(),
+    credentials: "include",
     body: JSON.stringify({ email }),
   });
 
@@ -16,7 +26,8 @@ export async function requestRegisterOtp(email: string) {
 export async function verifyRegisterOtp(payload: RegisterPayload) {
   const res = await fetch("/api/auth/register/verify-otp", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: jsonHeaders(),
+    credentials: "include",
     body: JSON.stringify(payload),
   });
 
@@ -25,24 +36,21 @@ export async function verifyRegisterOtp(payload: RegisterPayload) {
 }
 
 export async function loginWithBackend(payload: LoginPayload) {
-  const url = `${BASE_URL}/api/auth/login`;
-
-  const res = await fetch(url, {
+  const res = await fetch(`${NEXT_APP_BASE_URL}/api/auth/login`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: jsonHeaders(),
+    credentials: "include",
     body: JSON.stringify(payload),
-    // ไม่ต้องใส่ credentials ในฝั่ง server
   });
 
   if (!res.ok) return null;
   return res.json();
 }
 
-export async function meService(accessToken: string, traceId?: string) {
+export async function meService(traceId?: string) {
   const res = await fetch("/api/auth/me", {
     method: "GET",
     headers: {
-      authorization: `Bearer ${accessToken}`,
       ...(traceId ? { "x-trace-id": traceId } : {}),
     },
     credentials: "include",
@@ -54,6 +62,7 @@ export async function meService(accessToken: string, traceId?: string) {
   return (data?.data ?? data) as Me;
 }
 
+export const getMe = meService;
 
 export async function exchangeSocial(payload: {
   provider: "google" | "github";
@@ -63,21 +72,22 @@ export async function exchangeSocial(payload: {
 }) {
   return fetch("/api/auth/social/exchange", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
+    headers: jsonHeaders({
       "x-trace-id": payload.traceId,
       "x-token-kind": payload.tokenKind,
-    },
+    }),
     credentials: "include",
     body: JSON.stringify({ provider: payload.provider, accessToken: payload.accessToken }),
   });
 }
 
-
 export async function logoutBackend() {
-  await fetch(`${BASE_URL}/api/auth/logout`, {
+  await fetch(`${NEXT_APP_BASE_URL}/api/auth/logout`, {
     method: "POST",
     credentials: "include",
+    headers: {
+      "X-CSRF": getCsrfToken(),
+    },
   });
 }
 
@@ -86,8 +96,7 @@ export async function refreshService(traceId?: string) {
     method: "POST",
     credentials: "include",
     headers: {
-      "x-csrf": "1",
-      Origin: "http://localhost:3000",
+      "X-CSRF": getCsrfToken(),
       ...(traceId ? { "x-trace-id": traceId } : {}),
     },
   });

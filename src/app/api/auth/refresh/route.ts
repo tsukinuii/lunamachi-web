@@ -1,26 +1,18 @@
 import { NextResponse } from "next/server";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+import { backendApiUrl } from "@/server/bff/config";
+import { backendCookieJsonHeaders } from "@/server/bff/headers";
+import { rewriteBackendCookies } from "@/server/bff/cookies";
 
 export async function POST(req: Request) {
-  const cookie = req.headers.get("cookie") ?? "";
-
-  const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
+  const res = await fetch(backendApiUrl("/api/auth/refresh"), {
     method: "POST",
-    headers: {
-      cookie,
-      "x-csrf": "1",
-      origin: "http://localhost:3000",
-    },
+    headers: backendCookieJsonHeaders(req),
   });
 
   const data = await res.json().catch(() => ({}));
-
   const nextRes = NextResponse.json(data, { status: res.status });
 
-  // ถ้า backend rotate cookie ก็ forward กลับด้วย
-  const setCookie = res.headers.get("set-cookie");
-  if (setCookie) nextRes.headers.set("set-cookie", setCookie);
+  rewriteBackendCookies(nextRes, res);
 
   return nextRes;
 }

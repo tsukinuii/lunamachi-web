@@ -1,17 +1,29 @@
+import { getCsrfToken } from "./csrf";
+
 type ApiFetchOptions = RequestInit & { _retry?: boolean };
 
-async function refreshAccessToken() {
+function withUnsafeHeaders(init: RequestInit) {
+  const method = (init.method ?? "GET").toUpperCase();
+  if (!["POST", "PATCH", "DELETE"].includes(method)) return init.headers;
+
+  return {
+    ...(init.body ? { "Content-Type": "application/json" } : {}),
+    ...(init.headers || {}),
+    "X-CSRF": getCsrfToken(),
+  };
+}
+
+async function refreshSession() {
   const res = await fetch("/api/auth/refresh", {
     method: "POST",
     credentials: "include",
     headers: {
-      "x-csrf": "1",
-      Origin: "http://localhost:3000",
+      "X-CSRF": getCsrfToken(),
     },
   });
 
   if (!res.ok) return null;
-  return res.json(); // { accessToken, ... }
+  return res.json().catch(() => ({}));
 }
 
 export async function apiFetch<T>(input: string, init: ApiFetchOptions = {}): Promise<T> {
@@ -19,6 +31,7 @@ export async function apiFetch<T>(input: string, init: ApiFetchOptions = {}): Pr
 
   const res = await fetch(input, {
     ...fetchInit,
+    headers: withUnsafeHeaders(fetchInit),
     credentials: "include",
   });
 
@@ -29,16 +42,13 @@ export async function apiFetch<T>(input: string, init: ApiFetchOptions = {}): Pr
 
   if (_retry) throw new Error("Unauthorized");
 
-  const refreshed = await refreshAccessToken();
-  if (!refreshed?.accessToken) throw new Error("Refresh failed");
+  const refreshed = await refreshSession();
+  if (!refreshed) throw new Error("Refresh failed");
 
   const retryRes = await fetch(input, {
     ...fetchInit,
     credentials: "include",
-    headers: {
-      ...(fetchInit.headers || {}),
-      authorization: `Bearer ${refreshed.accessToken}`,
-    },
+    headers: withUnsafeHeaders(fetchInit),
   });
 
   if (!retryRes.ok) throw await retryRes.json().catch(() => ({}));

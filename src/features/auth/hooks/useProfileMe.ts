@@ -4,14 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import {
   meService,
-  refreshService,
   logoutBackend,
-} from "@/services/auth/auth.service";
-import { exchangeSocialAction } from "@/actions/auth/socialExchange.action";
-import { Me, SocialProvider } from "@/services/auth/types";
+} from "../services/auth.client";
+import { exchangeSocialAction } from "../actions/socialExchange.client";
+import { Me, SocialProvider } from "../types";
 
 type SessionLike = {
-  accessToken?: string; // backend access token (credentials)
   provider?: SocialProvider;
   providerAccessToken?: string;
   providerIdToken?: string;
@@ -36,22 +34,11 @@ function pickExchangeToken(s: SessionLike): Picked | null {
 }
 
 async function loadMe(session: SessionLike) {
-  // 1) credentials login
-  if (session.accessToken) {
-    const me = await meService(session.accessToken);
-    return me;
-  }
-
-  // 2) social login
-  if (!session.provider) throw new Error("No token available");
-
-  // try refresh first (cookie exists)
   try {
-    const r = await refreshService();
-    if (!r.accessToken) throw new Error("refresh missing accessToken");
-    return await meService(r.accessToken);
+    return await meService();
   } catch {
-    // refresh failed → exchange
+    if (!session.provider) throw new Error("No session available");
+
     const picked = pickExchangeToken(session);
     if (!picked) throw new Error("No provider token for exchange");
 
@@ -60,9 +47,8 @@ async function loadMe(session: SessionLike) {
       picked.token,
       picked.kind,
     );
-    if (!ex.accessToken) throw new Error("exchange missing accessToken");
 
-    return await meService(ex.accessToken, ex.traceId);
+    return await meService(ex.traceId);
   }
 }
 

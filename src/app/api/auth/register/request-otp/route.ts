@@ -1,18 +1,15 @@
 import { NextResponse } from "next/server";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+import { backendApiUrl } from "@/server/bff/config";
+import { backendJsonHeaders } from "@/server/bff/headers";
 
 export async function POST(req: Request) {
   const body = await req.json();
 
-  const res = await fetch(
-    `${API_BASE_URL}/auth/register/request-otp`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    },
-  );
+  const res = await fetch(backendApiUrl("/api/auth/register/request-otp"), {
+    method: "POST",
+    headers: backendJsonHeaders(req),
+    body: JSON.stringify(body),
+  });
 
   const data = await res.json().catch(() => ({}));
   return NextResponse.json(data, { status: res.status });

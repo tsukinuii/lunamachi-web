@@ -1,45 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useSession, signOut } from "next-auth/react";
-import {
-  meService,
-  logoutBackend,
-  refreshService,
-} from "@/services/auth/auth.service";
-import { exchangeSocialAction } from "@/actions/auth/socialExchange.action";
-import { Me, SocialProvider } from "@/services/auth/types";
-import { useProfileMe } from "@/hooks/useProfileMe";
-
-type SessionLike = {
-  accessToken?: string; // backend access token (credentials)
-  provider?: SocialProvider;
-  providerAccessToken?: string; // OAuth access_token (google+github)
-  providerIdToken?: string; // OAuth id_token (google only)
-  user?: { email?: string | null };
-};
-
-function pickTokenForExchange(session: SessionLike): {
-  token?: string;
-  kind: "access_token" | "id_token" | "none";
-} {
-  if (session.provider === "google") {
-    if (session.providerAccessToken)
-      return { token: session.providerAccessToken, kind: "access_token" };
-    if (session.providerIdToken)
-      return { token: session.providerIdToken, kind: "id_token" };
-    return { kind: "none" };
-  }
-  if (session.provider === "github") {
-    if (session.providerAccessToken)
-      return { token: session.providerAccessToken, kind: "access_token" };
-    return { kind: "none" };
-  }
-  return { kind: "none" };
-}
+import { signOut } from "next-auth/react";
+import { logoutBackend } from "@/features/auth/services/auth.client";
+import { useProfileMe } from "@/features/auth/hooks/useProfileMe";
 
 export default function ProfilePage() {
-  const { status, me, loading, error, logout, session } = useProfileMe();
+  const { status, me, loading, error, session } = useProfileMe();
 
   if (status === "loading")
     return <div style={{ padding: 24 }}>Loading...</div>;
@@ -55,7 +21,7 @@ export default function ProfilePage() {
 
       <pre
         style={{
-          background: "#111",
+          background: "#f0f0f0",
           padding: 12,
           borderRadius: 8,
           overflow: "auto",

@@ -3,16 +3,19 @@ import { backendApiUrl } from "@/server/bff/config";
 import { getIncomingCookie } from "@/server/bff/headers";
 
 export async function GET(req: Request) {
+  const url = new URL(req.url);
   const cookie = getIncomingCookie(req);
-  const traceId = req.headers.get("x-trace-id") ?? "";
 
-  const res = await fetch(backendApiUrl("/api/auth/me"), {
-    method: "GET",
-    headers: {
-      ...(cookie ? { cookie } : {}),
-      ...(traceId ? { "x-trace-id": traceId } : {}),
+  const res = await fetch(
+    backendApiUrl(`/api/accommodations${url.search}`),
+    {
+      method: "GET",
+      headers: {
+        ...(cookie ? { cookie } : {}),
+      },
+      cache: "no-store",
     },
-  });
+  );
 
   const data = await res.json().catch(() => ({}));
   return NextResponse.json(data, { status: res.status });

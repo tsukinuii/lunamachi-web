@@ -1,6 +1,6 @@
 "use client";
 
-import { exchangeSocial } from "@/services/auth/auth.service";
+import { exchangeSocial } from "../services/auth.client";
 
 function pickAccessToken(data: any) {
   return data?.accessToken ?? data?.data?.accessToken ?? data?.token ?? null;

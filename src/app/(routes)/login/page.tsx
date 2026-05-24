@@ -2,6 +2,7 @@
 
 import { signIn } from "next-auth/react";
 import { useState } from "react";
+import { getCsrfToken } from "@/lib/http/csrf";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -11,7 +12,10 @@ export default function LoginPage() {
     // 1) ยิง BFF เพื่อให้ backend set refresh cookie ลง browser
     const res = await fetch("/api/auth/login", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF": getCsrfToken(),
+      },
       body: JSON.stringify({ email, password }),
       credentials: "include",
     });

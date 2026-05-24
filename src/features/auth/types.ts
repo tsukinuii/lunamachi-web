@@ -26,4 +26,3 @@ export type RegisterPayload = {
 export type Me = { id: string; email?: string; name?: string };
 
 export type SocialProvider = "google" | "github";
-
